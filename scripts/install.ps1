@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Timeline Studio Kit v4.2 — Portable Automatic Windows Installer (`install.ps1`)
 .DESCRIPTION
@@ -15,6 +15,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 # Resolve agent workspace root (walks up from .runtime/kit/scripts, .agents/skills/..., or .claude/skills/...)
@@ -176,7 +177,11 @@ if (Test-Path (Join-Path $SharedTs "scripts\timeline-command.mjs")) {
         $tmpDir = Join-Path $RuntimeDir "_ts_extract"
         if (Test-Path $tmpDir) { Remove-Item -Recurse -Force $tmpDir }
         if (Test-Path $LocalTs) { Remove-Item -Recurse -Force $LocalTs }
-        Invoke-WebRequest -UseBasicParsing "https://github.com/MartinDelophy/ai-video-editor/archive/refs/heads/main.zip" -OutFile $zipFile
+        if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
+            & curl.exe -fsSL "https://github.com/MartinDelophy/ai-video-editor/archive/refs/heads/main.zip" -o $zipFile
+        } else {
+            Invoke-WebRequest -UseBasicParsing "https://github.com/MartinDelophy/ai-video-editor/archive/refs/heads/main.zip" -OutFile $zipFile
+        }
         Expand-Archive -Force $zipFile $tmpDir
         $inner = (Get-ChildItem $tmpDir -Directory | Select-Object -First 1).FullName
         Move-Item $inner $LocalTs
