@@ -127,6 +127,32 @@ def main():
         "detail": mvl_dir if not missing_pkgs else f"missing: {', '.join(missing_pkgs)}",
     })
 
+    render_pkgs = (
+        "vite",
+        "mediabunny",
+        os.path.join("@mediabunny", "aac-encoder"),
+        os.path.join("@ffmpeg", "ffmpeg"),
+        os.path.join("@ffmpeg", "core"),
+        os.path.join("@ffmpeg", "util"),
+        os.path.join("@phosphor-icons", "react"),
+    )
+    render_roots = (
+        os.path.join(ts_dir, "node_modules"),
+        os.path.join(os.path.dirname(ts_dir), "node_modules"),
+        os.path.join(mvl_dir, "node_modules"),
+    )
+    missing_render = [
+        p for p in render_pkgs
+        if not any(os.path.isdir(os.path.join(r, p)) for r in render_roots)
+    ]
+    render_script_ok = os.path.isfile(os.path.join(SCRIPT_DIR, "render_timeline_local.mjs"))
+    missing_render_items = (["render_timeline_local.mjs"] if not render_script_ok else []) + missing_render
+    checks.append({
+        "item": "local-render-runtime",
+        "ok": len(missing_render_items) == 0,
+        "detail": "ready (vite + mediabunny)" if not missing_render_items else f"missing: {', '.join(missing_render_items)}",
+    })
+
     chrome = _find_headless_browser(mvl_dir)
     checks.append({"item": "headless-browser", "ok": bool(chrome), "detail": chrome or "missing (run installer)"})
 

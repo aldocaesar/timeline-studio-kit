@@ -93,7 +93,11 @@ else
     echo "  [ZIP] Downloading MartinDelophy/ai-video-editor ZIP fallback..."
     rm -rf "$RUNTIME_DIR/_ts_extract" "$LOCAL_TS"
     curl -fsSL "https://github.com/MartinDelophy/ai-video-editor/archive/refs/heads/main.zip" -o "$RUNTIME_DIR/_ts_tmp.zip"
-    unzip -qo "$RUNTIME_DIR/_ts_tmp.zip" -d "$RUNTIME_DIR/_ts_extract"
+    if command -v unzip >/dev/null 2>&1; then
+      unzip -qo "$RUNTIME_DIR/_ts_tmp.zip" -d "$RUNTIME_DIR/_ts_extract"
+    else
+      "$PY_EXE" -B -m zipfile -e "$RUNTIME_DIR/_ts_tmp.zip" "$RUNTIME_DIR/_ts_extract"
+    fi
     mv "$RUNTIME_DIR/_ts_extract"/* "$LOCAL_TS"
     rm -rf "$RUNTIME_DIR/_ts_extract" "$RUNTIME_DIR/_ts_tmp.zip"
     echo "  [OK] Timeline Studio extracted to $LOCAL_TS"
@@ -101,12 +105,19 @@ else
 fi
 
 echo ""
-echo "[4/5] Setting up Motion Graphics, Natural Earth Maps & CLI Node Runtime..."
-if [[ ! -d "$RUNTIME_DIR/node_modules/playwright" || ! -d "$RUNTIME_DIR/node_modules/world-atlas" || ! -d "$RUNTIME_DIR/node_modules/fflate" ]]; then
+echo "[4/5] Setting up Motion Graphics, Natural Earth Maps, CLI & Local Render Node Runtime..."
+NODE_READY=1
+for pkg in playwright gsap three p5 p5.brush world-atlas d3-geo topojson-client maplibre-gl fflate vite mediabunny @mediabunny/aac-encoder @ffmpeg/ffmpeg @ffmpeg/core @ffmpeg/util @phosphor-icons/react react; do
+  if [[ ! -d "$RUNTIME_DIR/node_modules/$pkg" && ! -d "$SHARED_TS/node_modules/$pkg" ]]; then
+    NODE_READY=0
+    break
+  fi
+done
+if [[ "$NODE_READY" -eq 0 ]]; then
   cp "$SCRIPT_DIR/runtime-package.json" "$RUNTIME_DIR/package.json"
   (cd "$RUNTIME_DIR" && npm install --no-audit --no-fund)
 else
-  echo "  [OK] Local Node runtime already installed at $RUNTIME_DIR"
+  echo "  [OK] Local Node runtime (motion + CLI + local render) already installed."
 fi
 
 HAS_BROWSER=0

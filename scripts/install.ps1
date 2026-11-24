@@ -190,27 +190,32 @@ if (Test-Path (Join-Path $SharedTs "scripts\timeline-command.mjs")) {
     }
 }
 
-Write-Host "`n[4/5] Setting up Motion Graphics, Natural Earth Maps & CLI Node Runtime..." -ForegroundColor Cyan
+Write-Host "`n[4/5] Setting up Motion Graphics, Natural Earth Maps, CLI & Local Render Node Runtime..." -ForegroundColor Cyan
 $SharedMotion = Join-Path $env:USERPROFILE "OpenBot\Shared\motion-video-lab\runtime"
 $ReqNodePkgs = @("playwright", "gsap", "three", "p5", "p5.brush", "world-atlas", "d3-geo", "topojson-client", "maplibre-gl")
+$RenderNodePkgs = @("fflate", "vite", "mediabunny", "@mediabunny\aac-encoder", "@ffmpeg\ffmpeg", "@ffmpeg\core", "@ffmpeg\util", "@phosphor-icons\react")
 $SharedReady = $true
 foreach ($pkg in $ReqNodePkgs) {
     if (-not (Test-Path (Join-Path $SharedMotion "node_modules\$pkg"))) { $SharedReady = $false; break }
 }
+$SharedTsRenderReady = $true
+foreach ($pkg in $RenderNodePkgs) {
+    if (-not (Test-Path (Join-Path $SharedTs "node_modules\$pkg"))) { $SharedTsRenderReady = $false; break }
+}
 $LocalReady = $true
-foreach ($pkg in ($ReqNodePkgs + @("fflate"))) {
+foreach ($pkg in ($ReqNodePkgs + $RenderNodePkgs)) {
     if (-not (Test-Path (Join-Path $RuntimeDir "node_modules\$pkg"))) { $LocalReady = $false; break }
 }
 
-if ($SharedReady -and (Test-Path (Join-Path $SharedTs "node_modules\fflate"))) {
+if ($SharedReady -and $SharedTsRenderReady) {
     Write-Host "  [OK] Reusing existing Motion + Timeline Studio Node runtimes." -ForegroundColor Green
 } elseif ($LocalReady) {
-    Write-Host "  [OK] Local Motion & CLI runtime already installed at $RuntimeDir" -ForegroundColor Green
+    Write-Host "  [OK] Local Motion, CLI & Local Render runtime already installed at $RuntimeDir" -ForegroundColor Green
 } else {
     Copy-Item -Force (Join-Path $ScriptDir "runtime-package.json") (Join-Path $RuntimeDir "package.json")
     Push-Location $RuntimeDir
     try {
-        Write-Host "  [NPM] Installing Playwright, GSAP, Three.js, p5.brush, Natural Earth maps, fflate..." -ForegroundColor Yellow
+        Write-Host "  [NPM] Installing Playwright, GSAP, Three.js, p5.brush, Natural Earth maps, Vite, Mediabunny, fflate..." -ForegroundColor Yellow
         & npm install --no-audit --no-fund
         if ($LASTEXITCODE -ne 0) { throw "npm install failed with exit code $LASTEXITCODE" }
     } finally {
