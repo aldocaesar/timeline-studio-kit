@@ -53,17 +53,27 @@ def _hex_rgb(h: str, fb=(20, 24, 30)) -> tuple[int, int, int]:
 
 
 def _load_font(size: int, bold: bool = False) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
-    candidates = (
-        ["segoeuib.ttf", "arialbd.ttf", "georgia.ttf", "consolab.ttf"]
-        if bold
-        else ["segoeui.ttf", "arial.ttf", "georgia.ttf", "consola.ttf"]
-    )
-    win_fonts = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts")
-    for name in candidates:
-        p = os.path.join(win_fonts, name)
-        if os.path.isfile(p):
+    paths = []
+    if os.name == "nt":
+        win_fonts = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts")
+        names = ["segoeuib.ttf", "arialbd.ttf", "georgia.ttf", "consolab.ttf"] if bold else ["segoeui.ttf", "arial.ttf", "georgia.ttf", "consola.ttf"]
+        paths.extend(os.path.join(win_fonts, n) for n in names)
+    elif sys.platform == "darwin":
+        paths.extend([
+            "/System/Library/Fonts/Supplemental/Arial Bold.ttf" if bold else "/System/Library/Fonts/Supplemental/Arial.ttf",
+            "/Library/Fonts/Arial Bold.ttf" if bold else "/Library/Fonts/Arial.ttf",
+            "/System/Library/Fonts/Helvetica.ttc",
+        ])
+    else:
+        paths.extend([
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/TTF/DejaVuSans.ttf",
+        ])
+    for fp in paths:
+        if fp and os.path.isfile(fp):
             try:
-                return ImageFont.truetype(p, size)
+                return ImageFont.truetype(fp, size)
             except Exception:
                 pass
     return ImageFont.load_default()
